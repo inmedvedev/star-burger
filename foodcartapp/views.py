@@ -1,11 +1,9 @@
 from django.http import JsonResponse
 from django.templatetags.static import static
-
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-
-
+from phonenumbers import is_valid_number, parse
 import json
 
 from .models import Product
@@ -68,8 +66,21 @@ def product_list_api(request):
 @api_view(["POST"])
 def register_order(request):
     order_payload = request.data
+    order_keys = ('firstname', 'lastname', 'phonenumber', 'address')
     try:
+        if 'products' not in order_payload:
+            raise KeyError('products: Обязательное поле.')
         products = order_payload['products']
+        for key in order_keys:
+            if key not in order_payload:
+                raise KeyError(
+                    'firstname, lastname, phonenumber, address: Обязательное поле.'
+                )
+        for key in order_keys:
+            if isinstance(key, type(None)):
+                raise ValueError(
+                    'firstname, lastname, phonenumber, address: Это поле не может быть пустым.'
+                )
         if isinstance(products, type(None)):
             raise ValueError(
                 'products: Это поле не может быть пустым.'
@@ -80,9 +91,32 @@ def register_order(request):
             raise ValueError(
                 'products: Ожидался list со значениями, но был получен "str"'
             )
-    except KeyError:
+        if isinstance(order_payload['firstname'], type(None)):
+            raise ValueError(
+                'firstname: Это поле не может быть пустым.'
+            )
+        if bool(order_payload['phonenumber']) is False:
+            raise ValueError(
+                'phonenumber: Это поле не может быть пустым.'
+            )
+        phonenumber_obj = parse(order_payload['phonenumber'], 'RU')
+        if not is_valid_number(phonenumber_obj):
+            raise ValueError(
+                'phonenumber: Введен некорректный номер телефона.'
+            )
+        product_ids = Product.objects.values_list('id', flat=True)
+        for item in products:
+            if item['product'] not in product_ids:
+                raise ValueError(
+                    f'products: Недопустимый первичный ключ {item["product"]}'
+                )
+        if isinstance(order_payload['firstname'], list):
+            raise ValueError(
+                'firstname: Not a valid string.'
+            )
+    except KeyError as error:
         return Response(
-            data='products: Обязательное поле.',
+            data=error.args,
             status=status.HTTP_400_BAD_REQUEST
         )
     except ValueError as error:
