@@ -3,9 +3,10 @@ from django.templatetags.static import static
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework import status
+
 
 import json
-
 
 from .models import Product
 from .models import Order
@@ -67,13 +68,34 @@ def product_list_api(request):
 @api_view(["POST"])
 def register_order(request):
     order_payload = request.data
+    try:
+        products = order_payload['products']
+        if isinstance(products, type(None)):
+            raise ValueError(
+                'products: Это поле не может быть пустым.'
+            )
+        if bool(products) is False:
+            raise ValueError('products: Этот список не может быть пустым.')
+        if isinstance(products, str):
+            raise ValueError(
+                'products: Ожидался list со значениями, но был получен "str"'
+            )
+    except KeyError:
+        return Response(
+            data='products: Обязательное поле.',
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    except ValueError as error:
+        return Response(
+            data=error.args,
+            status=status.HTTP_400_BAD_REQUEST
+        )
     order = Order.objects.create(
         firstname=order_payload['firstname'],
         lastname=order_payload['lastname'],
         phone=order_payload['phonenumber'],
         address=order_payload['address']
     )
-    products = order_payload['products']
     for item in products:
         OrderItem.objects.create(
             order=order,
