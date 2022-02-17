@@ -2,9 +2,7 @@ from django.http import JsonResponse
 from django.templatetags.static import static
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
-from phonenumbers import is_valid_number, parse
-import json
+from rest_framework.serializers import ModelSerializer
 
 from .models import Product
 from .models import Order
@@ -63,77 +61,34 @@ def product_list_api(request):
     })
 
 
+class OrderItemSerializer(ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['product', 'quantity']
+
+
+class OrderSerializer(ModelSerializer):
+    products = OrderItemSerializer(many=True, allow_empty=False)
+
+    class Meta:
+        model = Order
+        fields = ['firstname', 'lastname', 'phonenumber', 'address', 'products']
+
+
 @api_view(["POST"])
 def register_order(request):
-    order_payload = request.data
-    order_keys = ('firstname', 'lastname', 'phonenumber', 'address')
-    try:
-        if 'products' not in order_payload:
-            raise KeyError('products: Обязательное поле.')
-        products = order_payload['products']
-        for key in order_keys:
-            if key not in order_payload:
-                raise KeyError(
-                    'firstname, lastname, phonenumber, address: Обязательное поле.'
-                )
-        for key in order_keys:
-            if isinstance(key, type(None)):
-                raise ValueError(
-                    'firstname, lastname, phonenumber, address: Это поле не может быть пустым.'
-                )
-        if isinstance(products, type(None)):
-            raise ValueError(
-                'products: Это поле не может быть пустым.'
-            )
-        if bool(products) is False:
-            raise ValueError('products: Этот список не может быть пустым.')
-        if isinstance(products, str):
-            raise ValueError(
-                'products: Ожидался list со значениями, но был получен "str"'
-            )
-        if isinstance(order_payload['firstname'], type(None)):
-            raise ValueError(
-                'firstname: Это поле не может быть пустым.'
-            )
-        if bool(order_payload['phonenumber']) is False:
-            raise ValueError(
-                'phonenumber: Это поле не может быть пустым.'
-            )
-        phonenumber_obj = parse(order_payload['phonenumber'], 'RU')
-        if not is_valid_number(phonenumber_obj):
-            raise ValueError(
-                'phonenumber: Введен некорректный номер телефона.'
-            )
-        product_ids = Product.objects.values_list('id', flat=True)
-        for item in products:
-            if item['product'] not in product_ids:
-                raise ValueError(
-                    f'products: Недопустимый первичный ключ {item["product"]}'
-                )
-        if isinstance(order_payload['firstname'], list):
-            raise ValueError(
-                'firstname: Not a valid string.'
-            )
-    except KeyError as error:
-        return Response(
-            data=error.args,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    except ValueError as error:
-        return Response(
-            data=error.args,
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    print(request.data)
+    serializer = OrderSerializer(data=request.data)
+    print(repr(serializer))
+    serializer.is_valid(raise_exception=True)
+    print('sdfsdfsdfsdfsdfsdfs')
     order = Order.objects.create(
-        firstname=order_payload['firstname'],
-        lastname=order_payload['lastname'],
-        phone=order_payload['phonenumber'],
-        address=order_payload['address']
+        firstname=serializer.validated_data['firstname'],
+        lastname=serializer.validated_data['lastname'],
+        phonenumber=serializer.validated_data['phonenumber'],
+        address=serializer.validated_data['address']
     )
-    for item in products:
-        OrderItem.objects.create(
-            order=order,
-            product=Product.objects.get(id=item['product']),
-            quantity=item['quantity']
-        )
+    order_items = serializer.validated_data['products']
+    products = [OrderItem(order=order, **fields) for fields in order_items]
+    OrderItem.objects.bulk_create(products)
     return Response('Sucсess')
