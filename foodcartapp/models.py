@@ -162,6 +162,11 @@ class Order(models.Model):
         choices=IS_PROCESSED_CHOICES,
         db_index=True
     )
+    comment = models.TextField(
+        'комментарий',
+        max_length=600,
+        blank=True
+    )
 
     class Meta:
         verbose_name = 'заказ'
