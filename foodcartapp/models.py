@@ -135,6 +135,10 @@ class OrderQuerySet(models.QuerySet):
 
 
 class Order(models.Model):
+    IS_PROCESSED_CHOICES = [
+        (True, 'Обработанный'),
+        (False, 'Необработанный'),
+    ]
     objects = OrderQuerySet.as_manager()
     firstname = models.CharField(
         'название',
@@ -152,7 +156,12 @@ class Order(models.Model):
         max_length=100,
         db_index=True
     )
-    is_processed = models.BooleanField('обработан', default=False)
+    is_processed = models.BooleanField(
+        'обработан',
+        default=False,
+        choices=IS_PROCESSED_CHOICES,
+        db_index=True
+    )
 
     class Meta:
         verbose_name = 'заказ'
