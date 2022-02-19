@@ -1,7 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from phonenumber_field.modelfields import PhoneNumberField
-from phonenumbers import is_valid_number
 from django.db.models import F, Sum
 
 
@@ -130,7 +129,7 @@ class OrderQuerySet(models.QuerySet):
     def get_order_price(self):
         return self.annotate(
             order_price=Sum(
-                F('items__quantity')*F('items__product__price')
+                F('items__quantity')*F('items__price')
             )
         )
 
@@ -153,7 +152,7 @@ class Order(models.Model):
         max_length=100,
         db_index=True
     )
-    is_processed = models.BooleanField('обработан')
+    is_processed = models.BooleanField('обработан', default=False)
 
     class Meta:
         verbose_name = 'заказ'
@@ -177,6 +176,13 @@ class OrderItem(models.Model):
         on_delete=models.CASCADE
     )
     quantity = models.IntegerField('количество')
+    price = models.DecimalField(
+        'цена товара',
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        default=0
+    )
 
     class Meta:
         verbose_name = 'пункт заказа'
