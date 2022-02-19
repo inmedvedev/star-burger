@@ -2,6 +2,8 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from phonenumber_field.modelfields import PhoneNumberField
 from django.db.models import F, Sum
+from datetime import datetime
+from django.utils import timezone
 
 
 class Restaurant(models.Model):
@@ -139,6 +141,11 @@ class Order(models.Model):
         (True, 'Обработанный'),
         (False, 'Необработанный'),
     ]
+    PAYMENT_METHOD_CHOICES = [
+        ('cash', 'Наличными'),
+        ('non-cash', 'Безналичный расчет'),
+        ('by card', 'Картой при получении')
+    ]
     objects = OrderQuerySet.as_manager()
     firstname = models.CharField(
         'название',
@@ -166,6 +173,28 @@ class Order(models.Model):
         'комментарий',
         max_length=600,
         blank=True
+    )
+    registered_at = models.DateTimeField(
+        default=timezone.now,
+        db_index=True
+    )
+    called_at = models.DateTimeField(
+        default=None,
+        blank=True,
+        null=True,
+        db_index=True
+    )
+    delivered_at = models.DateTimeField(
+        default=None,
+        blank=True,
+        null=True,
+        db_index=True
+    )
+    payment_method = models.CharField(
+        'способ оплаты',
+        max_length=100,
+        choices=PAYMENT_METHOD_CHOICES,
+        db_index=True
     )
 
     class Meta:
