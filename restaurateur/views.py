@@ -2,11 +2,15 @@ from django import forms
 from django.shortcuts import redirect, render
 from django.views import View
 from django.urls import reverse_lazy
+from django.conf import settings
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
+from collections import defaultdict
+from geopy import distance
+import requests
 
-from foodcartapp.models import Product, Restaurant, Order
+from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem
 
 
 class Login(forms.Form):
@@ -93,10 +97,52 @@ def view_restaurants(request):
     })
 
 
+def fetch_coordinates(apikey, address):
+    base_url = "https://geocode-maps.yandex.ru/1.x"
+    response = requests.get(base_url, params={
+        "geocode": address,
+        "apikey": apikey,
+        "format": "json",
+    })
+    response.raise_for_status()
+    found_places = response.json()['response']['GeoObjectCollection']['featureMember']
+
+    if not found_places:
+        return None
+
+    most_relevant = found_places[0]
+    lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
+    return lon, lat
+
+
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    return render(request, template_name='order_items.html', context={
-        'order_items': Order.objects.filter(
-            is_processed=False
-        ).get_order_price().get_restaurants_for_delivery()
-    })
+    orders = Order.objects.filter(is_processed=False).get_order_price().prefetch_related('items__product')
+    product_availability_cache = defaultdict(set)
+    menu_items = RestaurantMenuItem.objects.select_related(
+        'product', 'restaurant'
+    ).filter(availability=True)
+    for item in menu_items:
+        product_availability_cache[item.product.id].add(item.restaurant)
+    for order in orders:
+        restaurant_set_list = []
+        for order_item in order.items.all():
+            restaurant_set_list.append(product_availability_cache[order_item.product.id])
+        order.restaurants = set.intersection(*restaurant_set_list)
+        order_coords = fetch_coordinates(settings.YANDEX_GEOCODER_KEY, order.address)
+        if order_coords is None:
+            order.restaurants = '-'
+            continue
+        restaurant_distance = {}
+        for restaurant in order.restaurants:
+            restaurant_coords = restaurant.lng, restaurant.lat
+            restaurant_distance[restaurant.name] = round(distance.distance(order_coords, restaurant_coords).km, 2)
+        order.distance = sorted(restaurant_distance.items(), key=lambda x: x[1])
+
+    return render(
+        request,
+        template_name='order_items.html',
+        context={
+            'orders': orders
+        }
+    )
