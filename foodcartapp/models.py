@@ -4,7 +4,6 @@ from phonenumber_field.modelfields import PhoneNumberField
 from django.db.models import F, Sum, Prefetch
 from datetime import datetime
 from django.utils import timezone
-from collections import defaultdict
 
 
 class Restaurant(models.Model):
@@ -22,6 +21,8 @@ class Restaurant(models.Model):
         max_length=50,
         blank=True,
     )
+    lng = models.FloatField('Долгота')
+    lat = models.FloatField('Широта')
 
     class Meta:
         verbose_name = 'ресторан'
@@ -136,22 +137,6 @@ class OrderQuerySet(models.QuerySet):
             )
         )
 
-    def get_restaurants_for_delivery(self):
-        product_availability_cache = defaultdict(set)
-        menu_items = RestaurantMenuItem.objects.select_related(
-            'product', 'restaurant'
-        ).filter(availability=True)
-        for item in menu_items:
-            product_availability_cache[item.product.id].add(item.restaurant)
-        # print(product_availability_cache)
-        for order in self.prefetch_related('items__product', 'items'):
-            product_set_list = []
-            for product in order.items.all():
-                product_set_list.append(product_availability_cache[product.id])
-            available_restaurants = set.intersection(*product_set_list)
-            order.restaurants.add(*available_restaurants)
-        return self.prefetch_related('restaurants')
-
 
 class Order(models.Model):
     IS_PROCESSED_CHOICES = [
@@ -213,11 +198,6 @@ class Order(models.Model):
         choices=PAYMENT_METHOD_CHOICES,
         db_index=True
     )
-    restaurants = models.ManyToManyField(
-        Restaurant,
-        verbose_name='рестораны',
-        related_name='orders'
-    )
 
     class Meta:
         verbose_name = 'заказ'
@@ -255,5 +235,3 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product} {self.quantity}"
-
-
