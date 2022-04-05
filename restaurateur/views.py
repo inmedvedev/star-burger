@@ -11,6 +11,7 @@ from geopy import distance
 import requests
 
 from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem
+from geocoder.models import Place
 
 
 class Login(forms.Form):
@@ -98,6 +99,9 @@ def view_restaurants(request):
 
 
 def fetch_coordinates(apikey, address):
+    place, created = Place.objects.get_or_create(address=address)
+    if not created:
+        return place.lng, place.lat
     base_url = "https://geocode-maps.yandex.ru/1.x"
     response = requests.get(base_url, params={
         "geocode": address,
@@ -108,10 +112,14 @@ def fetch_coordinates(apikey, address):
     found_places = response.json()['response']['GeoObjectCollection']['featureMember']
 
     if not found_places:
+        place.delete()
         return None
 
     most_relevant = found_places[0]
     lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
+    place.lng = lon
+    place.lat = lat
+    place.save()
     return lon, lat
 
 
