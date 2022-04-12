@@ -112,7 +112,6 @@ def fetch_coordinates(apikey, address):
     found_places = response.json()['response']['GeoObjectCollection']['featureMember']
 
     if not found_places:
-        place.delete()
         return None
 
     most_relevant = found_places[0]
