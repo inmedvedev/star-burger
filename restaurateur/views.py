@@ -137,8 +137,8 @@ def view_orders(request):
             restaurant_set_list.append(product_availability_cache[order_item.product.id])
         order.restaurants = set.intersection(*restaurant_set_list)
         order_coords = fetch_coordinates(settings.YANDEX_GEOCODER_KEY, order.address)
-        if order_coords is None:
-            order.restaurants = '-'
+        if order_coords is None or order_coords == (None, None):
+            order.restaurants = None
             continue
         restaurant_distance = {}
         for restaurant in order.restaurants:
