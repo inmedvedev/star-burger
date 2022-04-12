@@ -148,7 +148,6 @@ class Order(models.Model):
         ('non-cash', 'Безналичный расчет'),
         ('by card', 'Картой при получении')
     ]
-    objects = OrderQuerySet.as_manager()
     firstname = models.CharField(
         'название',
         max_length=50,
@@ -198,6 +197,7 @@ class Order(models.Model):
         choices=PAYMENT_METHOD_CHOICES,
         db_index=True
     )
+    objects = OrderQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'заказ'
