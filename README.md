@@ -53,7 +53,14 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-Создайте файл базы данных SQLite и отмигрируйте её следующей командой:
+Создать базу данных PostgresSQL [по инструкции](https://www.digitalocean.com/community/tutorials/how-to-use-postgresql-with-your-django-application-on-ubuntu-20-04)
+
+Настроить бэкенд: создать файл `.env` в каталоге `star_burger/` со следующими настройками:
+- `DATABASE_URL` - [URL-схема](https://github.com/jazzband/dj-database-url#url-schema) базы данных
+- `YANDEX_GEOCODER_KEY` — API ключ Яндекс-геокодера
+- `ROLLBAR_TOKEN` - ключ от трекера ошибок https://rollbar.com/
+
+Отмигрируйте её следующей командой:
 
 ```sh
 python manage.py migrate
@@ -138,6 +145,8 @@ Parcel будет следить за файлами в каталоге `bundle
 parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
 ```
 
+Создать базу данных PostgresSQL [по инструкции](https://www.digitalocean.com/community/tutorials/how-to-use-postgresql-with-your-django-application-on-ubuntu-20-04)
+
 Настроить бэкенд: создать файл `.env` в каталоге `star_burger/` со следующими настройками:
 
 - `DEBUG` — дебаг-режим. Поставьте `False`.
@@ -145,6 +154,7 @@ parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
 - `ALLOWED_HOSTS` — [см. документацию Django](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts)
 - `YANDEX_GEOCODER_KEY` — API ключ Яндекс-геокодера
 - `ROLLBAR_TOKEN` - ключ от трекера ошибок https://rollbar.com/
+- `DATABASE_URL` - [URL-схема](https://github.com/jazzband/dj-database-url#url-schema) базы данных
 
 ## Цели проекта
 
