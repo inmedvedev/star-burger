@@ -2,6 +2,9 @@ bundles/**
 node_modules/
 media/
 
+# Json extensions
+*.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
