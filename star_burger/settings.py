@@ -12,7 +12,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
-SECRET_KEY = env('SECRET_KEY')
+SECRET_KEY = env('SECRET_KEY', 'ogouhjlloiuhntiynukyk')
 DEBUG = env.bool('DEBUG', True)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', '')
@@ -86,7 +86,7 @@ MEDIA_URL = '/media/'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=f"postgres://{env.str('DATABASE_USER')}:{env.str('DATABASE_PASSWORD')}@localhost/star_burger"
+        default=env.str('DATABASE_URL', '')
     )
 }
 
