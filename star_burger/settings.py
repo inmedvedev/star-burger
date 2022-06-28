@@ -15,7 +15,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 SECRET_KEY = env('SECRET_KEY', 'etirgvonenrfnoerngorenogneongg334g')
 DEBUG = env.bool('DEBUG', True)
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', 'localhost')
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', '')
 
 INSTALLED_APPS = [
     'foodcartapp.apps.FoodcartappConfig',
@@ -86,7 +86,7 @@ MEDIA_URL = '/media/'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='sqlite:////{0}'.format(os.path.join(BASE_DIR, 'db.sqlite3'))
+        default=f"postgres://{env.str('DATABASE_USER')}:{env.str('DATABASE_PASSWORD')}@localhost/star_burger"
     )
 }
 
